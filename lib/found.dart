@@ -6,7 +6,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart'; 
 import 'package:cloud_firestore/cloud_firestore.dart'; 
-import 'storage_service.dart'; // Cloudinary service
+import 'storage_service.dart'; 
+import 'matching_service.dart'; // IMPORTANT
+import '../main.dart';
+import 'match_result.dart'; // IMPORTANT
 
 class PersonFoundPage extends StatefulWidget {
   const PersonFoundPage({super.key});
@@ -18,17 +21,15 @@ class PersonFoundPage extends StatefulWidget {
 class _PersonFoundPageState extends State<PersonFoundPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController nameController = TextEditingController();
+  final TextEditingController nameController = TextEditingController(); // TEMPORARY Age input
   final TextEditingController locationController = TextEditingController();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController contactController = TextEditingController();  
 
-  // Image states and picker
   File? _mobileImage;
   Uint8List? _webImage;
   final ImagePicker _picker = ImagePicker();
 
-  // Firebase Instances
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> _pickImage(ImageSource source) async {
@@ -43,56 +44,57 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
     }
   }
 
-  // SUBMISSION FUNCTION (DB 2) - Now uses Cloudinary
+  // SUBMISSION FUNCTION (DB 2) - Now runs matching
   Future<void> _submitFoundReport() async {
     final User? currentUser = FirebaseAuth.instance.currentUser;
     
-    if (currentUser == null) {
+    if (currentUser == null || !_formKey.currentState!.validate() || (_mobileImage == null && _webImage == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: User not authenticated. Please log in again.')),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate() || (_mobileImage == null && _webImage == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all details and upload a photo.')),
+        const SnackBar(content: Text('Please log in, fill all details, and upload a photo.')),
       );
       return;
     }
     
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Uploading image and submitting report...')),
+      const SnackBar(content: Text('Uploading report and running matching algorithm...')),
     );
 
     try {
       // 1. Cloudinary Image Upload
-      String imageUrl = await uploadImage(
-        _mobileImage,
-        _webImage,
-      );
+      String imageUrl = await uploadImage(_mobileImage, _webImage);
 
-      // 2. Firestore Document Save (Database 2)
-      await _firestore.collection('found_persons').add({
+      // 2. Prepare data for Firestore and Matching
+      Map<String, dynamic> newFoundPersonData = {
         'name_if_known': nameController.text.trim(),
         'contact': contactController.text.trim(),
         'found_location': locationController.text.trim(),
         'date_found': dateController.text.trim(),
-        'photo_url': imageUrl, // Cloudinary URL save hoga
+        'photo_url': imageUrl,
         'finder_uid': currentUser.uid, 
         'is_matched': false, 
         'timestamp': FieldValue.serverTimestamp(),
-      });
+      };
+
+      // 3. Firestore Document Save (Database 2)
+      await _firestore.collection('found_persons').add(newFoundPersonData);
       
+      // 4. Run Matching Algorithm 
+      List<Map<String, dynamic>> matches = await runMatchingAlgorithm(newFoundPersonData);
+
       // Success
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Found Person Report Submitted! Matching initiated.')),
-      );
-      Navigator.pop(context); 
+      if (matches.isNotEmpty) {
+        // Navigate to the Match Result Screen
+        Navigator.push(context, MaterialPageRoute(builder: (context) => MatchResultPage(matches: matches)));
+      } else {
+         ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report submitted. No immediate match found.')),
+        );
+        Navigator.pop(context); 
+      }
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Upload Failed: ${e.toString().split(':')[0]}')),
+        SnackBar(content: Text('Submission Error: ${e.toString().split(':')[0]}')),
       );
     }
   }
@@ -123,13 +125,8 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Found Person Details (Database 2)',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
-                  ),
-                  const SizedBox(height: 25),
-                  
-                  _buildTextField('Full Name (if known)', nameController, Icons.person_pin),
+                  // NOTE: Name field is used as Age input for matching test
+                  _buildTextField('Full Name / Approx. Age (Testing)', nameController, Icons.person_pin), 
                   const SizedBox(height: 15),
                   _buildTextField('Your Contact (for follow-up)', contactController, Icons.phone, TextInputType.phone),
                   const SizedBox(height: 15),
@@ -138,7 +135,6 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
                   _buildDateField('Date Found', dateController, Icons.calendar_today),
                   const SizedBox(height: 30),
 
-                  // Image Section
                   const Text('Upload Current Photo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   Text('Photo is required for matching and will be uploaded to Cloudinary.', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
@@ -171,13 +167,11 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
                               : const Center(child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey))),
                     ),
                   ),
-                  // End Image Section
-
                   const SizedBox(height: 40),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _submitFoundReport, 
+                      onPressed: _submitFoundReport,
                       child: const Text('Submit Report'),
                     ),
                   ),
@@ -190,7 +184,7 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
     );
   }
 
-  // Helper Functions (Unchanged)
+  // Helper functions... (same as before)
   Widget _buildTextField(String label, TextEditingController controller, IconData icon, [TextInputType keyboardType = TextInputType.text]) {
     return TextFormField(
       controller: controller,

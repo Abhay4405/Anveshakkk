@@ -1,9 +1,9 @@
-// main.dart (Poori file)
+// main.dart
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart'; 
-import 'package:firebase_core/firebase_core.dart'; // NEW
-import 'firebase_options.dart'; // NEW: Yeh file 'flutterfire configure' se aayegi
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; 
 
 import 'home.dart';
 import 'splash.dart';
@@ -14,11 +14,11 @@ import 'report.dart';
 import 'registration.dart';
 import 'parent_auth.dart';
 import 'person_details.dart'; 
+// NEW: Import Match Result Page
 
-void main() async { // NEW: added async
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // NEW: Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -36,6 +36,7 @@ class Routes {
   static const personFound = '/personFound';
   static const adminPanel = '/adminPanel';
   static const report = '/report';
+  // Note: match_result will be navigated using push/MaterialPageRoute, not named route
 }
 
 class AnveshakApp extends StatelessWidget {

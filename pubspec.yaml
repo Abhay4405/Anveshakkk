@@ -1,0 +1,39 @@
+name: Anveshak
+description: "Anveshak - The Explorer Flutter project (UI only)"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Icons & UI
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.1.0 
+  font_awesome_flutter: ^10.7.0 
+
+  # Firebase Core Dependencies (ADD THESE)
+  firebase_core: ^2.27.1  
+  firebase_auth: ^4.17.9  
+  cloud_firestore: ^4.15.9 
+  firebase_storage: ^11.6.10
+
+  # Keep existing dependencies
+  provider: ^6.0.7
+  flutter_bloc: ^9.1.1
+  responsive_framework: ^1.2.0
+  image_picker: ^1.0.1
+  camera: ^0.10.0+4
+  http: ^1.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

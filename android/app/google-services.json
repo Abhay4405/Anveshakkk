@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "320022240083",
+    "project_id": "anveshakkk",
+    "storage_bucket": "anveshakkk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:320022240083:android:cbbf09c878ea8d69f69fa6",
+        "android_client_info": {
+          "package_name": "com.example.anveshak"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqqS7jX-z35Ew43qD10cfFLBo8nr5ucYA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

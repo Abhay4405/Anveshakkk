@@ -57,7 +57,7 @@ class MatchResultPage extends StatelessWidget {
 
                 ...matches.map((match) {
                   return MatchCard(match: match, onCall: _makeCall, onSms: _sendSms);
-                }).toList(),
+                }),
               ],
             ),
     );

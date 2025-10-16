@@ -5,9 +5,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-// ⚠️ APNE CLOUDINARY CREDENTIALS YAHAN DALEIN ⚠️
+// ⚠️ APNE CLOUDINARY CREDENTIALS ⚠️
 const String CLOUD_NAME = 'dz2ywqrmt'; // e.g., 'd****67g'
-const String UPLOAD_PRESET = 'anveshak_preset'; // The Unsigned Preset Name you created
+const String UPLOAD_PRESET = 'anveshak_preset'; // The Unsigned Preset Name created
 
 // Cloudinary's secure upload URL
 const String CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/$CLOUD_NAME/image/upload';

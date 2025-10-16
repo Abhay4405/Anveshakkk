@@ -8,7 +8,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'storage_service.dart'; 
 import 'matching_service.dart'; // IMPORTANT
-import '../main.dart';
 import 'match_result.dart'; // IMPORTANT
 
 class PersonFoundPage extends StatefulWidget {

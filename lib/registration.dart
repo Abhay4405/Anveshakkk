@@ -1,8 +1,8 @@
-// registration.dart
+// registration.dart - Simple Registration Form
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // NEW
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -12,131 +12,208 @@ class RegistrationPage extends StatefulWidget {
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
-  final _formKey = GlobalKey<FormState>(); // NEW: For validation
-  final TextEditingController nameController = TextEditingController(); // NEW
-  final TextEditingController emailController = TextEditingController(); // NEW
-  final TextEditingController phoneController = TextEditingController(); // NEW
-  final TextEditingController passwordController = TextEditingController(); // NEW
-  bool _agreedToTerms = false; // NEW
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  bool _agreedToTerms = false;
+  bool _isLoading = false;
 
-  final FirebaseAuth _auth = FirebaseAuth.instance; // NEW: Firebase instance
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // NEW: Registration Function
   Future<void> _registerUser() async {
-    if (_formKey.currentState!.validate() && _agreedToTerms) {
-      try {
-        // 1. Create User with Email and Password
-        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim(),
-        );
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-        // 2. Add User's Display Name
-        await userCredential.user!.updateDisplayName(nameController.text.trim());
+    if (!_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please agree to Terms & Conditions')),
+      );
+      return;
+    }
 
-        // Success: Show message and navigate to Login
+    setState(() => _isLoading = true);
+
+    try {
+      // Create user account
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      // Update display name
+      await userCredential.user!.updateDisplayName(nameController.text.trim());
+
+      // Save to Firestore
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'name': nameController.text.trim(),
+        'email': emailController.text.trim(),
+        'phone': phoneController.text.trim(),
+        'created_at': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration Successful! Please Login.')),
+          const SnackBar(content: Text('✓ Registration Successful! Please Login.')),
         );
-        Navigator.pop(context); // Go back to login
-        
-      } on FirebaseAuthException catch (e) {
-        String message = 'Registration failed. Please try again.';
-        if (e.code == 'weak-password') {
-          message = 'The password provided is too weak.';
-        } else if (e.code == 'email-already-in-use') {
-          message = 'The account already exists for that email.';
-        }
+        Navigator.pop(context);
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Registration failed';
+      if (e.code == 'weak-password') {
+        message = 'Password must be at least 6 characters';
+      } else if (e.code == 'email-already-in-use') {
+        message = 'This email is already registered';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An unknown error occurred.')),
+          SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
-    } else if (!_agreedToTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You must agree to the Terms & Conditions.')),
-        );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double formWidth = MediaQuery.of(context).size.width > 600 ? 500.0 : double.infinity;
-
     return Scaffold(
-      appBar: AppBar(title: const Text('New User Registration')),
+      appBar: AppBar(
+        title: const Text('Register'),
+        elevation: 0,
+      ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(30),
+          padding: const EdgeInsets.all(24),
           child: Container(
-            width: formWidth,
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 20, spreadRadius: 5),
-              ],
-            ),
+            constraints: const BoxConstraints(maxWidth: 500),
             child: Form(
-              key: _formKey, // NEW: Form Key added
+              key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header
                   Text(
-                    'Join Anveshak',
-                    style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
+                    'Create Account',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
-                    'Create your secure account to report a lost person or a found person.',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                    'Sign up to report lost or found persons',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600],
+                    ),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 32),
 
-                  _buildTextField('Full Name', Icons.person, controller: nameController),
-                  const SizedBox(height: 20),
-                  _buildTextField('Email', Icons.email, controller: emailController, keyboardType: TextInputType.emailAddress),
-                  const SizedBox(height: 20),
-                  _buildTextField('Phone Number', Icons.phone, controller: phoneController, keyboardType: TextInputType.phone),
-                  const SizedBox(height: 20),
-                  _buildTextField('Create Password', Icons.lock, controller: passwordController, isObscure: true),
-                  const SizedBox(height: 30),
+                  // Full Name
+                  _buildTextField(
+                    'Full Name',
+                    Icons.person,
+                    controller: nameController,
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) return 'Enter your name';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
+                  // Email
+                  _buildTextField(
+                    'Email',
+                    Icons.email,
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) return 'Enter your email';
+                      if (!value!.contains('@')) return 'Enter a valid email';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Phone
+                  _buildTextField(
+                    'Phone Number',
+                    Icons.phone,
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) return 'Enter your phone number';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Password
+                  _buildTextField(
+                    'Password',
+                    Icons.lock,
+                    controller: passwordController,
+                    isObscure: true,
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) return 'Enter a password';
+                      if ((value?.length ?? 0) < 6) return 'Password must be 6+ characters';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Terms & Conditions
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // NEW: Checkbox logic uses state
                       Checkbox(
-                        value: _agreedToTerms, 
+                        value: _agreedToTerms,
                         onChanged: (val) {
-                          setState(() {
-                            _agreedToTerms = val ?? false;
-                          });
-                        }, 
-                        activeColor: Theme.of(context).primaryColor
+                          setState(() => _agreedToTerms = val ?? false);
+                        },
                       ),
                       Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 10.0),
-                          child: Text(
-                            'I agree to the Terms & Conditions and understand that any false claim may result in legal action.',
-                            style: TextStyle(fontSize: 14, color: Colors.red[700], fontWeight: FontWeight.w500),
-                          ),
+                        child: Text(
+                          'I agree to Terms & Conditions',
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 32),
 
+                  // Register Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _registerUser, // NEW: Calls registration function
-                      child: const Text('Complete Registration'),
+                      onPressed: _isLoading ? null : _registerUser,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                          : const Text('Create Account'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Login Link
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Already have an account? Login',
+                        style: TextStyle(color: Theme.of(context).primaryColor),
+                      ),
                     ),
                   ),
                 ],
@@ -148,36 +225,36 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
-  // UPDATED: Now uses TextFormField and requires controller
   Widget _buildTextField(
-    String label, 
-    IconData icon, 
-    {
-      required TextEditingController controller,
-      TextInputType keyboardType = TextInputType.text, 
-      bool isObscure = false
-    }
-  ) {
+    String label,
+    IconData icon, {
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    bool isObscure = false,
+    String? Function(String?)? validator,
+  }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: isObscure,
+      validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: Colors.grey),
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter $label';
-        }
-        if (label == 'Email' && !value.contains('@')) {
-          return 'Enter a valid email';
-        }
-        if (label == 'Create Password' && value.length < 6) {
-          return 'Password must be at least 6 characters';
-        }
-        return null;
-      },
     );
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 }

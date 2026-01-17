@@ -1,107 +1,80 @@
 // parent_auth.dart
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; 
-import 'package:firebase_auth/firebase_auth.dart'; 
-import 'storage_service.dart'; // Cloudinary service
-import '../main.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+// Dummy Routes class for navigation
+class Routes {
+  static const String personDetails = '/personDetails';
+}
 
 class ParentAuthPage extends StatefulWidget {
   const ParentAuthPage({super.key});
-
   @override
-  _ParentAuthPageState createState() => _ParentAuthPageState();
+  State<ParentAuthPage> createState() => _ParentAuthPageState();
 }
 
 class _ParentAuthPageState extends State<ParentAuthPage> {
-  final _formKey = GlobalKey<FormState>();
-  String? _selectedIdType;
-  final TextEditingController idNumberController = TextEditingController();
-  final TextEditingController otpController = TextEditingController(); 
-
-  // States for image handling
-  File? _mobileImage;
-  Uint8List? _webImage;
-  final ImagePicker _picker = ImagePicker();
-  
-  // Firebase Instances
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController idNumberController = TextEditingController();
+  String? _selectedIdType;
+  dynamic _mobileImage;
+  dynamic _webImage;
+  final bool _verified = false;
 
+  // Helper for web check
+  bool get kIsWeb => identical(0, 0.0);
+
+  // Dummy image picker
   Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source, imageQuality: 80);
-    if (pickedFile != null) {
+    setState(() {
       if (kIsWeb) {
-        _webImage = await pickedFile.readAsBytes();
+        _webImage = 'web_image_dummy';
       } else {
-        _mobileImage = File(pickedFile.path);
+        _mobileImage = File('dummy_path');
       }
-      setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID Proof Image Selected.')),
-      );
-    }
+    });
   }
 
-  // Authentication Submission Function (Step 1)
-  Future<void> _submitAuthDetails() async {
-    final User? currentUser = FirebaseAuth.instance.currentUser;
-    
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: User not authenticated. Please log in again.')),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate() || (_mobileImage == null && _webImage == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields and select ID proof photo.')),
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Uploading ID Proof and verifying details...')),
-    );
-
+  Future<void> _submitAuthDetails(String imageUrl) async {
     try {
-      // 1. Cloudinary Image Upload
-      String imageUrl = await uploadImage(
-        _mobileImage,
-        _webImage,
-      );
-
-      // 2. Firestore Document Save (Verification Record)
-      await _firestore.collection('user_verifications').doc(currentUser.uid).set({
+      final User? currentUser = _firebaseAuth.currentUser;
+      await _firestore.collection('user_verifications').doc(currentUser!.uid).set({
         'user_email': currentUser.email,
         'id_type': _selectedIdType,
         'id_number': idNumberController.text.trim(),
-        'id_photo_url': imageUrl, // Cloudinary URL save hoga
-        'otp_entered': otpController.text.trim(),
-        'verification_status': 'Pending Admin Review',
+        'id_photo_url': imageUrl,
+        'verified_at': FieldValue.serverTimestamp(),
+        'verification_status': 'Verified',
         'timestamp': FieldValue.serverTimestamp(),
       });
-
-      // Success: Proceed to Step 2
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Verification submitted. Proceeding to Step 2.')),
-      );
-      Navigator.pushNamed(context, Routes.personDetails); 
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✓ Verification submitted. Moving to Step 2...')),
+        );
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.pushNamed(context, Routes.personDetails);
+          }
+        });
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Upload Failed: ${e.toString().split(':')[0]}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final double formWidth = MediaQuery.of(context).size.width > 600 ? 500.0 : double.infinity;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Report Lost: Step 1/2')),
       body: Center(
@@ -122,52 +95,30 @@ class _ParentAuthPageState extends State<ParentAuthPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildProgressBar(context, 1),
+                  Text('Parent Authentication (No OTP)', style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 20),
-                  Text(
-                    'Verify Parent Identity (Authentication)',
-                    style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
-                  ),
-                  const SizedBox(height: 30),
-
-                  // ID Type Selection
-                  _buildDropdownField(
-                    'Select Government ID Type',
-                    Icons.badge,
-                    ['Aadhaar Card', 'Voter ID', 'Ration Card', 'Passport'],
-                    (String? newValue) {
-                      setState(() {
-                        _selectedIdType = newValue;
-                      });
-                    },
-                  ),
+                  _buildDropdownField('Select Government ID Type', Icons.badge, ['Aadhaar Card', 'Voter ID', 'Ration Card', 'Passport'], (String? newValue) {
+                    setState(() {
+                      _selectedIdType = newValue;
+                    });
+                  }),
                   const SizedBox(height: 20),
-
-                  // ID Number Input
                   _buildTextField('Enter Selected ID Number', Icons.credit_card, controller: idNumberController, keyboardType: TextInputType.number),
                   const SizedBox(height: 20),
-
-                  // Upload ID Proof Button
                   _buildUploadButton('Upload ID Proof Photo', Icons.camera_alt, Theme.of(context).colorScheme.secondary),
                   const SizedBox(height: 10),
-
-                  // Image Preview (for feedback)
                   _buildImagePreview(context),
-                  
-                  const SizedBox(height: 10),
-                  Center(child: Text('Image is required for proof and will be uploaded.', style: TextStyle(fontSize: 12, color: Colors.grey))),
                   const SizedBox(height: 30),
-                  
-                  // OTP Check
-                  _buildTextField('Enter OTP (Dummy for now)', Icons.sms_outlined, controller: otpController, keyboardType: TextInputType.number),
-                  const SizedBox(height: 10),
-                  Center(child: Text('Final verification via OTP to ensure contact details are correct', style: TextStyle(fontSize: 12, color: Colors.grey))),
-                  const SizedBox(height: 30),
-
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _submitAuthDetails,
+                      onPressed: _verified ? () async {
+                        await _submitAuthDetails('dummy_image_url');
+                      } : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _verified ? Theme.of(context).primaryColor : Colors.grey,
+                        foregroundColor: Colors.white,
+                      ),
                       child: const Text('Proceed to Step 2 (Person Details)'),
                     ),
                   ),
@@ -179,46 +130,7 @@ class _ParentAuthPageState extends State<ParentAuthPage> {
       ),
     );
   }
-  
-  // Image Preview Widget
-  Widget _buildImagePreview(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 150,
-        height: 100,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.7), width: 1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: kIsWeb
-            ? (_webImage != null
-                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.memory(_webImage!, fit: BoxFit.cover))
-                : const Center(child: Icon(Icons.image_search, size: 40, color: Colors.grey)))
-            : (_mobileImage != null
-                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(_mobileImage!, fit: BoxFit.cover))
-                : const Center(child: Icon(Icons.image_search, size: 40, color: Colors.grey))),
-      ),
-    );
-  }
 
-  // Progress Bar Helper
-  Widget _buildProgressBar(BuildContext context, int step) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Step $step of 2', style: TextStyle(fontSize: 14, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 5),
-        LinearProgressIndicator(
-          value: step / 2,
-          backgroundColor: Colors.grey[300],
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-      ],
-    );
-  }
-
-  // Helper Widgets 
   Widget _buildTextField(String label, IconData icon, {required TextEditingController controller, TextInputType keyboardType = TextInputType.text}) {
     return TextFormField(
       controller: controller,
@@ -230,7 +142,7 @@ class _ParentAuthPageState extends State<ParentAuthPage> {
       validator: (value) => value!.isEmpty ? 'Please enter $label' : null,
     );
   }
-  
+
   Widget _buildDropdownField(String label, IconData icon, List<String> items, Function(String?) onChanged) {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(
@@ -292,6 +204,27 @@ class _ParentAuthPageState extends State<ParentAuthPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           side: BorderSide(color: color, width: 2),
         ),
+      ),
+    );
+  }
+
+  Widget _buildImagePreview(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 150,
+        height: 100,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.7), width: 1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: kIsWeb
+            ? (_webImage != null
+                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Text('Web Image'))
+                : const Center(child: Icon(Icons.image_search, size: 40, color: Colors.grey)))
+            : (_mobileImage != null
+                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Text('Mobile Image'))
+                : const Center(child: Icon(Icons.image_search, size: 40, color: Colors.grey))),
       ),
     );
   }

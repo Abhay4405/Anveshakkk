@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart'; // for kIsWeb
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'storage_service.dart';
 
 class PersonLostPage extends StatefulWidget {
   const PersonLostPage({super.key});
@@ -23,6 +26,7 @@ class _PersonLostPageState extends State<PersonLostPage> {
   File? _mobileImage;
   Uint8List? _webImage;
   final ImagePicker _picker = ImagePicker();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -38,6 +42,63 @@ class _PersonLostPageState extends State<PersonLostPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error picking image: $e')),
+      );
+    }
+  }
+
+  // -------------- SUBMIT LOST REPORT ----------------
+  Future<void> _submitLostReport() async {
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null ||
+        !_formKey.currentState!.validate() ||
+        (_mobileImage == null && _webImage == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fill all details and upload photo')),
+      );
+      return;
+    }
+
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Uploading report...')),
+      );
+
+      // Upload image to Cloudinary
+      String photoUrl = await uploadImage(_mobileImage, _webImage);
+
+      // Save to Firestore (Database 1: lost_persons)
+      await _firestore.collection('lost_persons').add({
+        'name': nameController.text.trim(),
+        'age': int.tryParse(ageController.text) ?? 0,
+        'gender': genderController.text.trim(),
+        'last_seen_address': addressController.text.trim(),
+        'contact': contactController.text.trim(),
+        'description': descriptionController.text.trim(),
+        'photo_url': photoUrl,
+        'reporter_uid': currentUser.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Report submitted successfully!')),
+      );
+
+      // Clear form
+      _formKey.currentState!.reset();
+      setState(() {
+        _mobileImage = null;
+        _webImage = null;
+        nameController.clear();
+        ageController.clear();
+        genderController.clear();
+        addressController.clear();
+        contactController.clear();
+        descriptionController.clear();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
     }
   }
@@ -129,13 +190,7 @@ class _PersonLostPageState extends State<PersonLostPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Missing Person Report Submitted!')),
-                          );
-                        }
-                      },
+                      onPressed: _submitLostReport,
                       child: Text('Submit Report'),
                     ),
                   ),

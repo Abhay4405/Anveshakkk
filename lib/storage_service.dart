@@ -1,23 +1,21 @@
-// lib/services/storage_service.dart
+// lib/storage_service.dart
 
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-// ⚠️ APNE CLOUDINARY CREDENTIALS ⚠️
+// ⚠️ CLOUDINARY CREDENTIALS ⚠️
 const String CLOUD_NAME = 'dz2ywqrmt'; // e.g., 'd****67g'
 const String UPLOAD_PRESET = 'anveshak_preset'; // The Unsigned Preset Name created
 
 // Cloudinary's secure upload URL
 const String CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/$CLOUD_NAME/image/upload';
 
-
 // Function to upload image to Cloudinary
 Future<String> uploadImage(File? mobileImage, Uint8List? webImage) async {
   if (mobileImage == null && webImage == null) {
-    // If no image is available but function is called, return dummy status
-    return "IMAGE_UPLOAD_SKIPPED";
+    throw Exception("No image provided for upload");
   }
 
   try {
@@ -46,7 +44,10 @@ Future<String> uploadImage(File? mobileImage, Uint8List? webImage) async {
       throw Exception("Invalid image state for upload.");
     }
     
-    var response = await request.send();
+    var response = await request.send().timeout(
+      const Duration(seconds: 30),
+      onTimeout: () => throw Exception('Upload timeout'),
+    );
 
     if (response.statusCode == 200) {
       // Success
@@ -58,11 +59,11 @@ Future<String> uploadImage(File? mobileImage, Uint8List? webImage) async {
     } else {
       // Failure
       final responseData = await response.stream.bytesToString();
-      throw Exception('Cloudinary Upload Failed with status ${response.statusCode}: $responseData');
+      throw Exception('Cloudinary Upload Failed: ${response.statusCode} - $responseData');
     }
 
   } catch (e) {
     print('Cloudinary Error: $e');
-    throw Exception('Failed to upload image due to network or API error: $e');
+    throw Exception('Failed to upload image: $e');
   }
 }

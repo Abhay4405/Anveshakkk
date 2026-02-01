@@ -106,7 +106,7 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
           print('Result for ${lostData['name']}: ${result['matched']}, Confidence: ${result['confidence']}%');
 
           if (result['matched'] == true &&
-              (result['confidence'] ?? 0) >= 40) {  // Reduced to match backend threshold
+              (result['confidence'] ?? 0) >= 60) {  // Stricter threshold - 60%+
             print('✅ MATCH FOUND: ${lostData['name']}');
             
             // Get contact or use placeholder for testing

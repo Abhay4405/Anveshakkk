@@ -63,15 +63,31 @@ class _RegistrationPageState extends State<RegistrationPage> {
       }
     } on FirebaseAuthException catch (e) {
       String message = 'Registration failed';
+      print('❌ FirebaseAuthException: Code=${e.code}, Message=${e.message}');
+      
       if (e.code == 'weak-password') {
         message = 'Password must be at least 6 characters';
       } else if (e.code == 'email-already-in-use') {
         message = 'This email is already registered';
+      } else if (e.code == 'invalid-email') {
+        message = 'Invalid email format';
+      } else if (e.code == 'operation-not-allowed') {
+        message = 'Email/password accounts not enabled in Firebase';
+      } else {
+        message = 'Firebase Error: ${e.message}';
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
+    } on FirebaseException catch (e) {
+      print('❌ FirebaseException: Code=${e.code}, Message=${e.message}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Firebase Error: ${e.message}')),
+        );
+      }
     } catch (e) {
+      print('❌ Unexpected Error: ${e.toString()}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${e.toString()}')),
@@ -135,7 +151,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
                       if (value?.isEmpty ?? true) return 'Enter your email';
-                      if (!value!.contains('@')) return 'Enter a valid email';
+                      // Better email validation
+                      const emailPattern =
+                          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+                      if (!RegExp(emailPattern).hasMatch(value!)) {
+                        return 'Enter a valid email (e.g., user@example.com)';
+                      }
                       return null;
                     },
                   ),

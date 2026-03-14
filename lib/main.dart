@@ -13,7 +13,8 @@ import 'admin.dart';
 import 'report.dart';
 import 'registration.dart';
 import 'parent_auth.dart';
-import 'person_details.dart'; 
+import 'person_details.dart';
+import 'lost.dart';
 // NEW: Import Match Result Page
 
 void main() async {
@@ -33,6 +34,7 @@ class Routes {
   static const register = '/register';
   static const parentAuth = '/parentAuth';
   static const personDetails = '/personDetails';
+  static const personLost = '/personLost';
   static const personFound = '/personFound';
   static const adminPanel = '/adminPanel';
   static const report = '/report';
@@ -116,6 +118,7 @@ class AnveshakApp extends StatelessWidget {
         Routes.register: (context) => const RegistrationPage(),
         Routes.parentAuth: (context) => const ParentAuthPage(),
         Routes.personDetails: (context) => const PersonDetailsPage(),
+        Routes.personLost: (context) => const PersonLostPage(),
         Routes.personFound: (context) => const PersonFoundPage(),
         Routes.adminPanel: (context) => const AdminPanelPage(),
         Routes.report: (context) => const ReportPage(),

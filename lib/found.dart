@@ -22,6 +22,8 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
   final TextEditingController locationController = TextEditingController();
   final TextEditingController contactController = TextEditingController();
   final TextEditingController dateController = TextEditingController();
+  
+  String? selectedGender = 'Unknown'; // Default gender for found person
 
   File? _mobileImage;
   Uint8List? _webImage;
@@ -71,6 +73,7 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
       DocumentReference foundDoc =
           await _firestore.collection('found_persons').add({
         'photo_url': foundImageUrl,
+        'gender': selectedGender ?? 'Unknown',
         'found_location': locationController.text.trim(),
         'contact': contactController.text.trim(),
         'finder_uid': currentUser.uid,
@@ -109,12 +112,9 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
               (result['confidence'] ?? 0) >= 60) {  // Stricter threshold - 60%+
             print('✅ MATCH FOUND: ${lostData['name']}');
             
-            // Get contact or use placeholder for testing
-            String contactNumber = lostData['contact'] ?? '';
-            if (contactNumber.isEmpty) {
-              // Fallback for testing if contact is missing
-              contactNumber = '9876543210'; // Default test number
-            }
+            // Get contact from lost person's registration
+            String contactNumber = lostData['contact']?.toString().trim() ?? '';
+            if (contactNumber.isEmpty) contactNumber = 'N/A';
             
             matches.add({
               'lost_person_id': doc.id,
@@ -122,7 +122,9 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
               'lost_person_name': lostData['name'],
               'lost_person_contact': contactNumber,
               'lost_person_age': lostData['age'] ?? 'N/A',
-              'lost_person_gender': lostData['gender'] ?? 'N/A',
+              'lost_person_gender': lostData['gender'] ?? 'Unknown',
+              'lost_person_photo_url': lostImageUrl,  // Lost person's original photo
+              'found_person_photo_url': foundImageUrl,  // Found person's photo
               'confidence': result['confidence'],
               'contact': contactNumber,
               'found_id': foundDoc.id,
@@ -154,69 +156,278 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Report Person Found')),
-      body: Center(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.green.shade50, Colors.green.shade100],
+          ),
+        ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                _buildTextField(
-                  'Found Location',
-                  locationController,
-                  Icons.location_on,
-                ),
-                const SizedBox(height: 15),
-                _buildTextField(
-                  'Your Contact Number',
-                  contactController,
-                  Icons.phone,
-                  TextInputType.phone,
-                ),
-                const SizedBox(height: 15),
-                _buildDateField(),
-                const SizedBox(height: 20),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () => _pickImage(ImageSource.camera),
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Camera'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () => _pickImage(ImageSource.gallery),
-                      icon: const Icon(Icons.photo),
-                      label: const Text('Gallery'),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green.shade700, Colors.green.shade500],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-
-                SizedBox(
-                  width: 200,
-                  height: 200,
-                  child: kIsWeb
-                      ? (_webImage != null
-                          ? Image.memory(_webImage!, fit: BoxFit.cover)
-                          : const Icon(Icons.image))
-                      : (_mobileImage != null
-                          ? Image.file(_mobileImage!, fit: BoxFit.cover)
-                          : const Icon(Icons.image)),
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: const Icon(Icons.arrow_back, color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        'Report Person Found',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 30),
+              ),
 
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _submitFoundReport,
-                    child: const Text('Submit & Match'),
+              // Form Content
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTextField(
+                              'Found Location',
+                              locationController,
+                              Icons.location_on,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              'Your Contact Number',
+                              contactController,
+                              Icons.phone,
+                              TextInputType.phone,
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              initialValue: selectedGender,
+                              decoration: InputDecoration(
+                                labelText: 'Found Person Gender (Approx.)',
+                                prefixIcon: Icon(Icons.transgender, color: Colors.green[700]),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+                                ),
+                              ),
+                              items: const [
+                                DropdownMenuItem(value: 'Male', child: Text('Male')),
+                                DropdownMenuItem(value: 'Female', child: Text('Female')),
+                                DropdownMenuItem(value: 'Other', child: Text('Other')),
+                                DropdownMenuItem(value: 'Unknown', child: Text('Unknown')),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedGender = value;
+                                });
+                              },
+                              validator: (value) => value == null ? 'Please select gender' : null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildDateField(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Photo Buttons
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Capture Photo',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _pickImage(ImageSource.camera),
+                                    icon: const Icon(Icons.camera_alt),
+                                    label: const Text('Camera'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green[700],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _pickImage(ImageSource.gallery),
+                                    icon: const Icon(Icons.photo),
+                                    label: const Text('Gallery'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green[600],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Photo Preview
+                            Container(
+                              width: double.infinity,
+                              constraints: const BoxConstraints(maxHeight: 400),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[300]!, width: 2),
+                              ),
+                              child: kIsWeb
+                                  ? (_webImage != null
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(10),
+                                          child: Image.memory(_webImage!, fit: BoxFit.contain),
+                                        )
+                                      : Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.image, size: 60, color: Colors.grey[400]),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'No image selected',
+                                              style: TextStyle(color: Colors.grey[500]),
+                                            ),
+                                          ],
+                                        ))
+                                  : (_mobileImage != null
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(10),
+                                          child: Image.file(_mobileImage!, fit: BoxFit.contain),
+                                        )
+                                      : Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.image, size: 60, color: Colors.grey[400]),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'No image selected',
+                                              style: TextStyle(color: Colors.grey[500]),
+                                            ),
+                                          ],
+                                        )),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Submit Button
+                      Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.3),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _submitFoundReport,
+                            icon: const Icon(Icons.check_circle),
+                            label: const Text('Submit & Match'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green[700],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -235,7 +446,17 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(icon, color: Colors.green[700]),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+        ),
       ),
       validator: (value) =>
           value == null || value.isEmpty ? 'Enter $label' : null,
@@ -246,9 +467,19 @@ class _PersonFoundPageState extends State<PersonFoundPage> {
     return TextFormField(
       controller: dateController,
       readOnly: true,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         labelText: 'Date Found',
-        prefixIcon: Icon(Icons.calendar_today),
+        prefixIcon: Icon(Icons.calendar_today, color: Colors.green[700]),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+        ),
       ),
       onTap: () async {
         DateTime? picked = await showDatePicker(

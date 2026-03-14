@@ -15,44 +15,184 @@ class _MatchResultPageState extends State<MatchResultPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.matches.isNotEmpty ? 'Match Found' : 'No Match Found',
+      backgroundColor: Colors.grey.shade50,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.green.shade50,
+              Colors.teal.shade50,
+            ],
+          ),
         ),
-        backgroundColor:
-            widget.matches.isNotEmpty ? Colors.green : Colors.redAccent,
-      ),
-      body: widget.matches.isEmpty
-          ? _noMatchUI()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: widget.matches.length,
-              itemBuilder: (context, index) {
-                final match = widget.matches[index];
-                return _matchCard(context, match);
-              },
+        child: Column(
+          children: [
+            // Header
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: widget.matches.isNotEmpty
+                      ? [Colors.green.shade700, Colors.green.shade500]
+                      : [Colors.orange.shade700, Colors.orange.shade500],
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.matches.isNotEmpty
+                        ? Colors.green.withOpacity(0.3)
+                        : Colors.orange.withOpacity(0.3),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: const Icon(Icons.arrow_back, color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.matches.isNotEmpty ? '✓ Match Found' : '✗ No Matches',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.matches.isNotEmpty
+                              ? '${widget.matches.length} possible match${widget.matches.length > 1 ? 'es' : ''} found'
+                              : 'Keep us updated',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.8),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
+
+            // Content
+            Expanded(
+              child: widget.matches.isEmpty
+                  ? _noMatchUI()
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: widget.matches.length,
+                      itemBuilder: (context, index) {
+                        final match = widget.matches[index];
+                        return _matchCard(context, match);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  // ---------------- NO MATCH UI ----------------
+  // No match UI
   Widget _noMatchUI() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 80, color: Colors.grey),
-          SizedBox(height: 20),
-          Text(
-            'No matching person found',
-            style: TextStyle(fontSize: 18),
-          ),
-          SizedBox(height: 5),
-          Text(
-            'Your report has been saved.',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.search_off,
+                size: 60,
+                color: Colors.orange.shade700,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Match Found Yet',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange.shade800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your report has been saved and will be matched with future reports.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Icon(Icons.info, color: Colors.blue.shade700, size: 32),
+                  const SizedBox(height: 12),
+                  Text(
+                    'What happens next?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '• We\'ll continuously scan new reports\n• You\'ll be notified if a match is found\n• Check back regularly for updates',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -66,26 +206,37 @@ class _MatchResultPageState extends State<MatchResultPage> {
             ? match['confidence'].toDouble()
             : 0.0;
     
-    // Get photo URL from match data - try multiple field names
-    String photoUrl = '';
+    // Get both photo URLs
+    String lostPhotoUrl = '';
+    String foundPhotoUrl = '';
+    
+    if (match['lost_person_photo_url'] != null) {
+      lostPhotoUrl = match['lost_person_photo_url'].toString();
+    }
+    
     if (match['found_person_photo_url'] != null) {
-      photoUrl = match['found_person_photo_url'].toString();
+      foundPhotoUrl = match['found_person_photo_url'].toString();
     } else if (match['photo_url'] != null) {
-      photoUrl = match['photo_url'].toString();
+      foundPhotoUrl = match['photo_url'].toString();
     } else if (match['found_photo_url'] != null) {
-      photoUrl = match['found_photo_url'].toString();
+      foundPhotoUrl = match['found_photo_url'].toString();
     } else if (match['image_url'] != null) {
-      photoUrl = match['image_url'].toString();
+      foundPhotoUrl = match['image_url'].toString();
     }
     
     // Try multiple fields for contact - lost_person_contact or contact
     String contact = 'N/A';
-    if (match['lost_person_contact'] != null && 
-        match['lost_person_contact'].toString().trim().isNotEmpty) {
-      contact = match['lost_person_contact'].toString().trim();
-    } else if (match['contact'] != null && 
-               match['contact'].toString().trim().isNotEmpty) {
-      contact = match['contact'].toString().trim();
+    if (match['lost_person_contact'] != null) {
+      String temp = match['lost_person_contact'].toString().trim();
+      if (temp.isNotEmpty && temp != 'N/A') {
+        contact = temp;
+      }
+    }
+    if (contact == 'N/A' && match['contact'] != null) {
+      String temp = match['contact'].toString().trim();
+      if (temp.isNotEmpty && temp != 'N/A') {
+        contact = temp;
+      }
     }
     
     // Get report IDs from match data
@@ -146,45 +297,187 @@ class _MatchResultPageState extends State<MatchResultPage> {
             ),
             const SizedBox(height: 16),
             
-            // Matched Person's Photo
-            if (photoUrl.isNotEmpty) ...[
-              Center(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      photoUrl,
-                      width: 200,
-                      height: 250,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 200,
-                          height: 250,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(12),
+            // Display both Lost and Found Photos
+            if (lostPhotoUrl.isNotEmpty || foundPhotoUrl.isNotEmpty) ...[
+              Column(
+                children: [
+                  // Photo Comparison Section
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '📸 Photo Comparison',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[700],
                           ),
-                          child: const Center(
-                            child: Icon(Icons.image_not_supported,
-                                color: Colors.grey, size: 40),
-                          ),
-                        );
-                      },
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Lost Person's Photo
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Lost Report',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange[700],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (lostPhotoUrl.isNotEmpty)
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.1),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          lostPhotoUrl,
+                                          width: 140,
+                                          height: 180,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              width: 140,
+                                              height: 180,
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey[200],
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: const Center(
+                                                child: Icon(Icons.image_not_supported,
+                                                    color: Colors.grey, size: 30),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Container(
+                                      width: 140,
+                                      height: 180,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Center(
+                                        child: Icon(Icons.image_not_supported,
+                                            color: Colors.grey, size: 30),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            // Center Divider with Match Icon
+                            Column(
+                              children: [
+                                const SizedBox(height: 20),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Found Person's Photo
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Found Report',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.green[700],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (foundPhotoUrl.isNotEmpty)
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.1),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          foundPhotoUrl,
+                                          width: 140,
+                                          height: 180,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              width: 140,
+                                              height: 180,
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey[200],
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: const Center(
+                                                child: Icon(Icons.image_not_supported,
+                                                    color: Colors.grey, size: 30),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Container(
+                                      width: 140,
+                                      height: 180,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Center(
+                                        child: Icon(Icons.image_not_supported,
+                                            color: Colors.grey, size: 30),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                ],
               ),
-              const SizedBox(height: 16),
             ],
             
             Text(
@@ -214,7 +507,7 @@ class _MatchResultPageState extends State<MatchResultPage> {
             ),
             const Divider(height: 30),
             // Contact info section
-            if (contact != 'N/A' && contact.isNotEmpty) ...[
+            if (contact.isNotEmpty && contact != 'N/A') ...[
               Row(
                 children: [
                   const Icon(Icons.phone, size: 18, color: Colors.blue),

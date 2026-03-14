@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -19,6 +20,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController passwordController = TextEditingController();
   bool _agreedToTerms = false;
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -38,16 +40,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Create user account
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      // Update display name
       await userCredential.user!.updateDisplayName(nameController.text.trim());
 
-      // Save to Firestore
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'name': nameController.text.trim(),
         'email': emailController.text.trim(),
@@ -63,31 +62,19 @@ class _RegistrationPageState extends State<RegistrationPage> {
       }
     } on FirebaseAuthException catch (e) {
       String message = 'Registration failed';
-      print('❌ FirebaseAuthException: Code=${e.code}, Message=${e.message}');
-      
       if (e.code == 'weak-password') {
         message = 'Password must be at least 6 characters';
       } else if (e.code == 'email-already-in-use') {
         message = 'This email is already registered';
       } else if (e.code == 'invalid-email') {
         message = 'Invalid email format';
-      } else if (e.code == 'operation-not-allowed') {
-        message = 'Email/password accounts not enabled in Firebase';
       } else {
         message = 'Firebase Error: ${e.message}';
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
-    } on FirebaseException catch (e) {
-      print('❌ FirebaseException: Code=${e.code}, Message=${e.message}');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Firebase Error: ${e.message}')),
-        );
-      }
     } catch (e) {
-      print('❌ Unexpected Error: ${e.toString()}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${e.toString()}')),
@@ -101,145 +88,247 @@ class _RegistrationPageState extends State<RegistrationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register'),
-        elevation: 0,
-      ),
-      body: Center(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.purple.shade50,
+              Colors.purple.shade100,
+            ],
+          ),
+        ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Text(
-                    'Create Account',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+          child: Column(
+            children: [
+              // Header
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.purple.shade700, Colors.purple.shade500],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.purple.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Sign up to report lost or found persons',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Full Name
-                  _buildTextField(
-                    'Full Name',
-                    Icons.person,
-                    controller: nameController,
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) return 'Enter your name';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Email
-                  _buildTextField(
-                    'Email',
-                    Icons.email,
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) return 'Enter your email';
-                      // Better email validation
-                      const emailPattern =
-                          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
-                      if (!RegExp(emailPattern).hasMatch(value!)) {
-                        return 'Enter a valid email (e.g., user@example.com)';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Phone
-                  _buildTextField(
-                    'Phone Number',
-                    Icons.phone,
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) return 'Enter your phone number';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Password
-                  _buildTextField(
-                    'Password',
-                    Icons.lock,
-                    controller: passwordController,
-                    isObscure: true,
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) return 'Enter a password';
-                      if ((value?.length ?? 0) < 6) return 'Password must be 6+ characters';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Terms & Conditions
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _agreedToTerms,
-                        onChanged: (val) {
-                          setState(() => _agreedToTerms = val ?? false);
-                        },
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
-                      Expanded(
-                        child: Text(
-                          'I agree to Terms & Conditions',
-                          style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        'Create Account',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Register Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _registerUser,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                          : const Text('Create Account'),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Login Link
-                  Center(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'Already have an account? Login',
-                        style: TextStyle(color: Theme.of(context).primaryColor),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+
+              // Form Content
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Join Anveshak',
+                          style: GoogleFonts.poppins(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.purple.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Help reunite families, report lost or found persons',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        _buildTextField(
+                          'Full Name',
+                          Icons.person,
+                          controller: nameController,
+                          validator: (value) {
+                            if (value?.isEmpty ?? true) return 'Enter your name';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildTextField(
+                          'Email Address',
+                          Icons.email,
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value?.isEmpty ?? true) return 'Enter your email';
+                            const emailPattern =
+                                r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+                            if (!RegExp(emailPattern).hasMatch(value!)) {
+                              return 'Enter a valid email';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildTextField(
+                          'Phone Number',
+                          Icons.phone,
+                          controller: phoneController,
+                          keyboardType: TextInputType.phone,
+                          validator: (value) {
+                            if (value?.isEmpty ?? true) return 'Enter your phone number';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildTextField(
+                          'Password',
+                          Icons.lock,
+                          controller: passwordController,
+                          isObscure: true,
+                          suffixIcon: Icons.visibility,
+                          suffixIconPressed: () {
+                            setState(() => _obscurePassword = !_obscurePassword);
+                          },
+                          obscurePassword: _obscurePassword,
+                          validator: (value) {
+                            if (value?.isEmpty ?? true) return 'Enter a password';
+                            if ((value?.length ?? 0) < 6) {
+                              return 'Password must be 6+ characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.purple.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.purple.shade200),
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: _agreedToTerms,
+                                onChanged: (val) {
+                                  setState(() => _agreedToTerms = val ?? false);
+                                },
+                                activeColor: Colors.purple[700],
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'I agree to Terms & Conditions',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        Container(
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.purple.withOpacity(0.3),
+                                blurRadius: 16,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _registerUser,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.purple[700],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : Text(
+                                      'Create Account',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        Center(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Already have an account? Login',
+                              style: TextStyle(
+                                color: Colors.purple[700],
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -252,18 +341,37 @@ class _RegistrationPageState extends State<RegistrationPage> {
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
     bool isObscure = false,
+    IconData? suffixIcon,
+    VoidCallback? suffixIconPressed,
+    bool obscurePassword = false,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      obscureText: isObscure,
+      obscureText: isObscure && obscurePassword,
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(icon, color: Colors.purple[700]),
+        suffixIcon: suffixIcon != null && isObscure
+            ? IconButton(
+                icon: Icon(
+                  obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.purple[700],
+                ),
+                onPressed: suffixIconPressed,
+              )
+            : null,
+        filled: true,
+        fillColor: Colors.white,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.purple[700]!, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),

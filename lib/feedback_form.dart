@@ -1,7 +1,6 @@
 // lib/feedback_form.dart
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'main.dart'; // For Routes.home
@@ -85,109 +84,306 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final double formWidth = MediaQuery.of(context).size.width > 600 ? 600.0 : double.infinity;
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Reunification Feedback')),
-      body: Center(
+      backgroundColor: Colors.grey.shade50,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.teal.shade50,
+              Colors.cyan.shade50,
+            ],
+          ),
+        ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(30),
-          child: Container(
-            width: formWidth,
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 20, spreadRadius: 5),
-              ],
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Confirm Reunification',
-                    style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.teal.shade700, Colors.teal.shade500],
                   ),
-                  const SizedBox(height: 10),
-                  const Text('Your feedback helps us track successful reunifications and improve the system.'),
-                  const SizedBox(height: 30),
-
-                  // 1. Match Confirmation
-                  Row(
-                    children: [
-                      Icon(Icons.check_circle, color: _isMatchConfirmed ? Colors.green : Colors.grey),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Was the reunification successful?',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
                   ),
-                  Row(
-                    children: [
-                      Radio<bool>(
-                        value: true,
-                        groupValue: _isMatchConfirmed,
-                        onChanged: (val) => setState(() => _isMatchConfirmed = val!),
-                        activeColor: Colors.green,
-                      ),
-                      const Text('Yes, match was correct.'),
-                      Radio<bool>(
-                        value: false,
-                        groupValue: _isMatchConfirmed,
-                        onChanged: (val) => setState(() => _isMatchConfirmed = val!),
-                        activeColor: Colors.red,
-                      ),
-                      const Text('No, match was incorrect.'),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 2. Rating
-                  Text(
-                    'Rate your experience (${_reunionRating.toStringAsFixed(1)})',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                  Slider(
-                    value: _reunionRating,
-                    min: 1,
-                    max: 5,
-                    divisions: 8,
-                    label: _reunionRating.toStringAsFixed(1),
-                    onChanged: (double value) {
-                      setState(() {
-                        _reunionRating = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 3. Comments
-                  TextFormField(
-                    controller: commentController,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Any comments or suggestions?',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(15))),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.teal.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
                     ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _submitFeedback,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, padding: const EdgeInsets.symmetric(vertical: 18)),
-                      child: const Text('Submit Feedback', style: TextStyle(fontSize: 18)),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: const Icon(Icons.arrow_back, color: Colors.white),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reunification Feedback',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Help us improve the system',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+
+              // Form Content
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Confirm Reunification',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Your feedback helps us track successful reunifications and improve our matching system.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+
+                        // Match Confirmation Section
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.teal.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.teal.shade200),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: _isMatchConfirmed ? Colors.green : Colors.grey,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Was the reunification successful?',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.teal.shade800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Radio<bool>(
+                                    value: true,
+                                    groupValue: _isMatchConfirmed,
+                                    onChanged: (val) => setState(() => _isMatchConfirmed = val!),
+                                    activeColor: Colors.green,
+                                  ),
+                                  const Expanded(
+                                    child: Text(
+                                      'Yes, match was correct',
+                                      style: TextStyle(fontSize: 13),
+                                    ),
+                                  ),
+                                  Radio<bool>(
+                                    value: false,
+                                    groupValue: _isMatchConfirmed,
+                                    onChanged: (val) => setState(() => _isMatchConfirmed = val!),
+                                    activeColor: Colors.red,
+                                  ),
+                                  const Text(
+                                    'No, match was incorrect',
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Rating Section
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.amber.shade200),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Rate your experience',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.amber.shade800,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: List.generate(5, (index) {
+                                      return Icon(
+                                        index < _reunionRating.toInt()
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        color: Colors.amber[700],
+                                        size: 24,
+                                      );
+                                    }),
+                                  ),
+                                  Text(
+                                    '${_reunionRating.toStringAsFixed(1)}/5',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.amber[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Slider(
+                                value: _reunionRating,
+                                min: 1,
+                                max: 5,
+                                divisions: 4,
+                                label: _reunionRating.toStringAsFixed(1),
+                                activeColor: Colors.amber[700],
+                                onChanged: (double value) {
+                                  setState(() => _reunionRating = value);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Comments Section
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: TextFormField(
+                            controller: commentController,
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                              labelText: 'Additional comments or suggestions',
+                              labelStyle: TextStyle(color: Colors.teal[700]),
+                              border: InputBorder.none,
+                              hintText: 'Help us improve...',
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Submit Button
+                        Container(
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.teal.withOpacity(0.3),
+                                blurRadius: 16,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _submitFeedback,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.teal[700],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Submit Feedback',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1,7 +1,6 @@
 // admin.dart
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminPanelPage extends StatelessWidget {
@@ -38,79 +37,199 @@ class AdminPanelPage extends StatelessWidget {
     final double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin Panel')),
-      body: FutureBuilder<Map<String, int>>(
-        future: _fetchAdminData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error loading data: ${snapshot.error}'));
-          }
-
-          final data = snapshot.data ?? {};
-          final pendingVerifications = data['pendingVerifications'] ?? 0;
-          final activeLost = data['activeLost'] ?? 0;
-          final totalFeedback = data['totalFeedback'] ?? 0;
-
-          return Padding(
-            padding: EdgeInsets.all(screenWidth > 600 ? 40 : 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Admin Dashboard',
-                  style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
+      backgroundColor: Colors.grey.shade50,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.deepPurple.shade50,
+              Colors.purple.shade50,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.deepPurple.shade700, Colors.deepPurple.shade500],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'Manage user verifications, reports, and system integrity.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
                 ),
-                const SizedBox(height: 30),
-                Expanded(
-                  child: GridView.count(
-                    crossAxisCount: screenWidth > 900 ? 3 : (screenWidth > 600 ? 2 : 1),
-                    crossAxisSpacing: 20,
-                    mainAxisSpacing: 20,
-                    childAspectRatio: screenWidth > 900 ? 1.5 : (screenWidth > 600 ? 2.5 : 4),
-                    children: [
-                      _adminCard(context, 'Pending Verifications', '$pendingVerifications New', Icons.verified_user, Colors.orange),
-                      _adminCard(context, 'Active Lost Reports', '$activeLost Awaiting Match', Icons.compare_arrows, Colors.redAccent),
-                      _adminCard(context, 'Total Feedback', '$totalFeedback Records', Icons.rate_review, Colors.teal),
-                      _adminCard(context, 'System Logs', 'View Activity', Icons.history, Colors.blueGrey),
-                    ],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.deepPurple.withOpacity(0.3),
+                    blurRadius: 20,
+                    spreadRadius: 5,
                   ),
-                ),
-              ],
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Admin Dashboard',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'System management & analytics',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          );
-        },
+
+            // Content
+            Expanded(
+              child: FutureBuilder<Map<String, int>>(
+                future: _fetchAdminData(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+
+                  final data = snapshot.data ?? {};
+                  final pendingVerifications = data['pendingVerifications'] ?? 0;
+                  final activeLost = data['activeLost'] ?? 0;
+                  final totalFeedback = data['totalFeedback'] ?? 0;
+
+                  return Padding(
+                    padding: EdgeInsets.all(screenWidth > 600 ? 24 : 16),
+                    child: GridView.count(
+                      crossAxisCount: screenWidth > 900 ? 3 : (screenWidth > 600 ? 2 : 1),
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: screenWidth > 900 ? 1.4 : (screenWidth > 600 ? 2 : 2.2),
+                      children: [
+                        _adminCard(
+                          context,
+                          'Pending Verifications',
+                          pendingVerifications.toString(),
+                          Icons.verified_user,
+                          Colors.orange,
+                        ),
+                        _adminCard(
+                          context,
+                          'Active Lost Reports',
+                          activeLost.toString(),
+                          Icons.compare_arrows,
+                          Colors.red,
+                        ),
+                        _adminCard(
+                          context,
+                          'Total Feedback',
+                          totalFeedback.toString(),
+                          Icons.rate_review,
+                          Colors.teal,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _adminCard(BuildContext context, String title, String subtitle, IconData icon, Color color) {
-    return Card(
-      elevation: 5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(15),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+  Widget _adminCard(BuildContext context, String title, String count, IconData icon, Color color) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          child: Icon(icon, size: 30, color: color),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Navigating to $title')),
+            );
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, size: 28, color: color),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      count,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(Icons.arrow_forward_ios, size: 16, color: color.withOpacity(0.5)),
+              ],
+            ),
+          ),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        subtitle: Text(subtitle, style: TextStyle(color: color)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Navigating to $title')));
-        },
       ),
     );
   }

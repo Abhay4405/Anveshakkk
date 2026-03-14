@@ -11,50 +11,172 @@ class HomePage extends StatelessWidget {
     final double cardWidth = screenWidth > 600 ? 200 : (screenWidth - 60) / 2;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Anveshak - Home'),
-        automaticallyImplyLeading: false, // Hide back button after login
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.blue.shade50,
+              Colors.blue.shade100,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
-              Text(
-                'Welcome, User!',
-                style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.w700, color: Theme.of(context).primaryColor),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                'Select an action to continue.',
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 40),
-              Center(
-                child: Wrap(
-                  spacing: 20,
-                  runSpacing: 20,
-                  alignment: WrapAlignment.center,
+              // Header
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade700, Colors.blue.shade500],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Route updated to new name
-                    _featureCard(context, 'Person Lost', Icons.person_off, Routes.parentAuth, cardWidth, Theme.of(context).colorScheme.primary),
-                    _featureCard(context, 'Person Found', Icons.person_search, Routes.personFound, cardWidth, Theme.of(context).colorScheme.secondary),
-                    _featureCard(context, 'Admin Panel', Icons.admin_panel_settings, Routes.adminPanel, cardWidth, Colors.green),
-                    _featureCard(context, 'Reports & Stats', Icons.bar_chart, Routes.report, cardWidth, Colors.orange),
+                    Text(
+                      'Welcome Back! 👋',
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Help reunite families, one person at a time',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
-              Text(
-                'Our Mission',
-                style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Anveshak aims to bridge the communication gap between families of missing persons and finders. We use technology to ensure quick and secure reunifications for those who cannot express their identity.',
-                style: TextStyle(fontSize: 15, color: Colors.grey[800]),
+
+              // Main Content
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'What would you like to do?',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          _featureCard(
+                            context,
+                            'Person Lost',
+                            Icons.person_off,
+                            Routes.parentAuth,
+                            cardWidth,
+                            Colors.red.shade400,
+                            Colors.red.shade100,
+                          ),
+                          _featureCard(
+                            context,
+                            'Person Found',
+                            Icons.person_search,
+                            Routes.personFound,
+                            cardWidth,
+                            Colors.green.shade400,
+                            Colors.green.shade100,
+                          ),
+                          _featureCard(
+                            context,
+                            'Admin Panel',
+                            Icons.admin_panel_settings,
+                            Routes.adminPanel,
+                            cardWidth,
+                            Colors.purple.shade400,
+                            Colors.purple.shade100,
+                          ),
+                          _featureCard(
+                            context,
+                            'Statistics',
+                            Icons.bar_chart,
+                            Routes.report,
+                            cardWidth,
+                            Colors.orange.shade400,
+                            Colors.orange.shade100,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.blue.shade700,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Our Mission',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade800,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Anveshak bridges the gap between families of missing persons and those who find them. Using advanced technology, we ensure quick and secure reunifications for those unable to express their identity.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                              height: 1.6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ],
           ),
@@ -63,11 +185,17 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _featureCard(BuildContext context, String title, IconData icon, String route, double cardWidth, Color color) {
+  Widget _featureCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    String route,
+    double cardWidth,
+    Color accentColor,
+    Color bgColor,
+  ) {
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, route);
-      },
+      onTap: () => Navigator.pushNamed(context, route),
       child: Container(
         width: cardWidth,
         height: cardWidth,
@@ -76,25 +204,57 @@ class HomePage extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.2),
+              color: accentColor.withOpacity(0.25),
               spreadRadius: 2,
-              blurRadius: 10,
-              offset: const Offset(0, 5),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 50, color: color),
-            const SizedBox(height: 15),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[800]),
-            )
-          ],
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => Navigator.pushNamed(context, route),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [bgColor, bgColor.withOpacity(0.5)],
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 44,
+                      color: accentColor,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

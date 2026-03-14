@@ -1,15 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
+import 'backend_config.dart';
 
-/// CHANGE THIS if testing on real mobile
-/// For emulator: 10.0.2.2
-/// For localhost: localhost:9000
-const String BASE_URL = "http://localhost:9000";
+final String BASE_URL = getBackendUrl();
 const int TIMEOUT_SECONDS = 120;  // Increased for model loading
 
 class MatchingService {
-  /// Calls Python Flask face-matching backend
+  /// Calls Python FastAPI face-matching backend
   /// Returns: {"matched": bool, "confidence": double, "distance": double}
   static Future<Map<String, dynamic>> runFaceMatching({
     required String foundImageUrl,

@@ -41,6 +41,7 @@ class _ParentAuthPageState extends State<ParentAuthPage> {
   String? _currentEmailForOtp;
 
   bool _emailOtpSent = false;
+  String? _demoOtp;
 
   Future<void> _sendEmailOtp() async {
     try {
@@ -95,10 +96,13 @@ class _ParentAuthPageState extends State<ParentAuthPage> {
       } catch (e) {
         // Fallback if backend is not available
         print('Backend error: $e, using demo mode');
+        setState(() {
+          _demoOtp = otp;
+          _emailOtpSent = true;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('OTP sent to $email\n\nDEMO MODE - OTP: $otp')),
+          SnackBar(content: Text('OTP sent to $email (Demo Mode)')),
         );
-        setState(() => _emailOtpSent = true);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -120,7 +124,10 @@ class _ParentAuthPageState extends State<ParentAuthPage> {
 
       final storedOtp = otpDoc.get('otp');
       if (storedOtp == emailOtpController.text) {
-        setState(() => _verified = true);
+        setState(() {
+          _verified = true;
+          _demoOtp = null;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Email OTP verified successfully')),
         );
@@ -245,6 +252,46 @@ class _ParentAuthPageState extends State<ParentAuthPage> {
                   ],
                 ),
               ),
+
+              if (_demoOtp != null)
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.amber.shade700, width: 2),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info, color: Colors.amber.shade800),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Demo Mode - OTP',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber.shade800,
+                              ),
+                            ),
+                            Text(
+                              'OTP: $_demoOtp',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber.shade900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               Padding(
                 padding: const EdgeInsets.all(20),

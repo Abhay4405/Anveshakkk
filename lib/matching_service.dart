@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
 import 'backend_config.dart';
 
-final String BASE_URL = getBackendUrl();
+final String BASE_URL = getFaceBackendUrl();
 const int TIMEOUT_SECONDS = 120;  // Increased for model loading
 
 class MatchingService {

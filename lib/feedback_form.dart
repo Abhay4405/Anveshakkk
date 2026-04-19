@@ -241,7 +241,7 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
                                   ),
                                   const Expanded(
                                     child: Text(
-                                      'Yes, match was correct',
+                                      'Yes, correct',
                                       style: TextStyle(fontSize: 13),
                                     ),
                                   ),
@@ -251,9 +251,11 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
                                     onChanged: (val) => setState(() => _isMatchConfirmed = val!),
                                     activeColor: Colors.red,
                                   ),
-                                  const Text(
-                                    'No, match was incorrect',
-                                    style: TextStyle(fontSize: 13),
+                                  const Expanded(
+                                    child: Text(
+                                      'No, incorrect',
+                                      style: TextStyle(fontSize: 13),
+                                    ),
                                   ),
                                 ],
                               ),
